@@ -135,3 +135,15 @@ data class CityLocation(
     val longitude: Double,
     val country: String = "Costa Rica"
 )
+
+@Immutable
+@com.google.firebase.firestore.IgnoreExtraProperties
+data class SeasonalInsult(
+    val id: String = "",
+    val text: String = "",
+    val season: String = "general",
+    val category: String = "ALL",
+    val isFamilyFriendly: Boolean = true,
+    val isActive: Boolean = true,
+    val priority: Int = 1
+)

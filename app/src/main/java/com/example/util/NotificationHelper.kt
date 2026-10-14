@@ -83,14 +83,23 @@ object NotificationHelper {
         }
     }
 
+    private val isFlashingTorch = java.util.concurrent.atomic.AtomicBoolean(false)
+
     /**
      * Strobe the device's camera flashlight if available (3 energetic pulses)
      * with sufficient pulse width (300ms) for hardware LED driver ignition.
      */
     fun flashDeviceTorch(context: Context, pulses: Int = 3) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!isFlashingTorch.compareAndSet(false, true)) {
+                Log.d("NotificationHelper", "Torch already pulsing, skipping overlapping request")
+                return
+            }
             try {
-                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return
+                val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: run {
+                    isFlashingTorch.set(false)
+                    return
+                }
                 
                 // Prioritize rear camera with flash, or fallback to any camera with flash
                 val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
@@ -109,7 +118,10 @@ object NotificationHelper {
                     } catch (_: Throwable) {
                         false
                     }
-                } ?: return
+                } ?: run {
+                    isFlashingTorch.set(false)
+                    return
+                }
 
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
@@ -125,10 +137,12 @@ object NotificationHelper {
                         try {
                             cameraManager.setTorchMode(cameraId, false)
                         } catch (_: Throwable) {}
+                        isFlashingTorch.set(false)
                     }
                 }
             } catch (t: Throwable) {
                 Log.d("NotificationHelper", "Flashlight pulse not supported: ${t.message}")
+                isFlashingTorch.set(false)
             }
         }
     }

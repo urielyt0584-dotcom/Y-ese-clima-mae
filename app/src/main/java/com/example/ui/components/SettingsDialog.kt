@@ -55,7 +55,7 @@ fun SettingsDialog(
     var showWarningDialog by remember { mutableStateOf(false) }
     var showWearDisclaimerDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
-    val firebaseRepo = remember { FirebaseRepository.create(context) }
+    val firebaseRepo = remember { FirebaseRepository.getInstance(context) }
     val coroutineScope = rememberCoroutineScope()
     val currentUser by firebaseRepo.currentUser.collectAsStateWithLifecycle(initialValue = firebaseRepo.getCurrentUser())
     var isSigningIn by remember { mutableStateOf(false) }

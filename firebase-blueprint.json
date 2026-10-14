@@ -66,6 +66,42 @@
         }
       },
       "required": ["id", "userUid", "userName", "canton", "comment", "createdAt"]
+    },
+    "SeasonalInsult": {
+      "title": "SeasonalInsult",
+      "description": "Dynamic seasonal insult or dicho that can be updated from Firebase Console without releasing an app update",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique insult identifier"
+        },
+        "text": {
+          "type": "string",
+          "description": "The sarcastic insult or dicho text"
+        },
+        "season": {
+          "type": "string",
+          "description": "Season or event: e.g. 'lluviosa', 'seca', 'navidad', 'semana_santa', 'general'"
+        },
+        "category": {
+          "type": "string",
+          "description": "Weather category trigger: 'RAIN', 'EXTREME_HEAT', 'COLD', 'THUNDERSTORM', 'ALL'"
+        },
+        "isFamilyFriendly": {
+          "type": "boolean",
+          "description": "Whether this insult is suitable for family-friendly mode"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether this insult is active"
+        },
+        "priority": {
+          "type": "integer",
+          "description": "Priority weight (1-10)"
+        }
+      },
+      "required": ["id", "text", "season", "isActive"]
     }
   },
   "firestore": {
@@ -80,6 +116,12 @@
         "$ref": "#/entities/CommunityBlame"
       },
       "description": "Public community complaints against San Pedro"
+    },
+    "/seasonal_insults/{insultId}": {
+      "schema": {
+        "$ref": "#/entities/SeasonalInsult"
+      },
+      "description": "Dynamic seasonal and event-based insults managed by admin via Firebase Console"
     }
   }
 }

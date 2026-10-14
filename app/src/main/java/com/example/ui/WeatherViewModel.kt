@@ -195,6 +195,21 @@ class WeatherViewModel(
 
         // Measure barometer pressure on app launch
         measureBarometerPressure()
+
+        // Real-time synchronization of seasonal insults from Firebase Firestore
+        viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
+            try {
+                val firebaseRepo = com.example.data.repository.FirebaseRepository.getInstance(getApplication())
+                firebaseRepo.observeSeasonalInsults().collect { insults ->
+                    if (insults.isNotEmpty()) {
+                        Log.d("WeatherViewModel", "Sincronizados ${insults.size} insultos de temporada desde Firebase")
+                        WeatherCommentEngine.updateSeasonalInsults(insults)
+                    }
+                }
+            } catch (e: Throwable) {
+                Log.d("WeatherViewModel", "Firebase seasonal insults sync skipped: ${e.message}")
+            }
+        }
     }
 
     fun loadWeather(
@@ -458,7 +473,7 @@ class WeatherViewModel(
 
         viewModelScope.launch(Dispatchers.IO + coroutineExceptionHandler) {
             try {
-                val firebaseRepo = com.example.data.repository.FirebaseRepository.create(getApplication())
+                val firebaseRepo = com.example.data.repository.FirebaseRepository.getInstance(getApplication())
                 val user = firebaseRepo.getCurrentUser()
                 if (user != null) {
                     firebaseRepo.syncUserProfile(

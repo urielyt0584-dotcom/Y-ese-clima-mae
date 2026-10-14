@@ -6,12 +6,38 @@ import kotlin.random.Random
 object WeatherCommentEngine {
 
     private val dynamicRemoteInsults = mutableListOf<String>()
+    private val dynamicSeasonalInsults = mutableListOf<com.example.data.model.SeasonalInsult>()
 
     @Synchronized
     fun updateDynamicInsults(insults: List<String>) {
         if (insults.isNotEmpty()) {
             dynamicRemoteInsults.clear()
             dynamicRemoteInsults.addAll(insults)
+        }
+    }
+
+    @Synchronized
+    fun updateSeasonalInsults(insults: List<com.example.data.model.SeasonalInsult>) {
+        dynamicSeasonalInsults.clear()
+        dynamicSeasonalInsults.addAll(insults.filter { it.isActive && it.text.isNotBlank() })
+    }
+
+    @Synchronized
+    fun getSeasonalInsultsCount(): Int = dynamicSeasonalInsults.size
+
+    @Synchronized
+    fun getSeasonalInsultsFor(category: WeatherCategory, isFamilyFriendlyMode: Boolean): List<String> {
+        val matches = dynamicSeasonalInsults.filter { insult ->
+            val matchesCategory = insult.category.equals("ALL", ignoreCase = true) ||
+                    insult.category.equals(category.name, ignoreCase = true)
+            val matchesFamily = if (isFamilyFriendlyMode) insult.isFamilyFriendly else true
+            matchesCategory && matchesFamily
+        }.map { it.text }
+
+        return if (!isFamilyFriendlyMode) {
+            matches + dynamicRemoteInsults
+        } else {
+            matches
         }
     }
 
@@ -806,8 +832,9 @@ object WeatherCommentEngine {
         } else emptyList()
 
         val baseComments = if (specialInsults.isNotEmpty()) specialInsults + comments else comments
-        val finalComments = if (!isFamilyFriendlyMode && dynamicRemoteInsults.isNotEmpty()) {
-            baseComments + dynamicRemoteInsults
+        val seasonalDynamic = getSeasonalInsultsFor(category, isFamilyFriendlyMode)
+        val finalComments = if (seasonalDynamic.isNotEmpty()) {
+            baseComments + seasonalDynamic
         } else {
             baseComments
         }

@@ -9,6 +9,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import com.example.R
+import com.example.data.model.SeasonalInsult
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -19,6 +20,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ServerTimestamp
@@ -55,10 +57,38 @@ class FirebaseRepository(
 ) {
     companion object {
         private const val TAG = "FirebaseRepository"
+        private const val MIN_BLAME_INTERVAL_MS = 20_000L // 20s anti-spam cooldown
+
+        @Volatile
+        private var INSTANCE: FirebaseRepository? = null
+
+        fun getInstance(context: Context): FirebaseRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: create(context.applicationContext).also { INSTANCE = it }
+            }
+        }
 
         fun create(context: Context): FirebaseRepository {
-            val databaseId = context.getString(R.string.firestore_database_id)
-            val firestore = FirebaseFirestore.getInstance(databaseId)
+            val databaseId = try {
+                context.getString(R.string.firestore_database_id)
+            } catch (e: Exception) {
+                ""
+            }
+            val firestore = if (databaseId.isNotBlank()) {
+                FirebaseFirestore.getInstance(databaseId)
+            } else {
+                FirebaseFirestore.getInstance()
+            }
+
+            try {
+                val settings = FirebaseFirestoreSettings.Builder()
+                    .setPersistenceEnabled(true)
+                    .build()
+                firestore.firestoreSettings = settings
+            } catch (e: Exception) {
+                Log.d(TAG, "Firestore settings initialized: ${e.message}")
+            }
+
             return FirebaseRepository(firestore)
         }
     }
@@ -133,23 +163,97 @@ class FirebaseRepository(
         }
     }
 
+    private var lastBlameTimestamp = 0L
+
     suspend fun postCommunityBlame(canton: String, comment: String): Result<Unit> {
         val user = auth.currentUser ?: return Result.failure(IllegalStateException("Debes iniciar sesión con Google para culpar a San Pedro en la nube"))
+
+        val now = System.currentTimeMillis()
+        if (now - lastBlameTimestamp < MIN_BLAME_INTERVAL_MS) {
+            return Result.failure(IllegalStateException("Paciencia, mae. Espere unos segundos antes de volver a culpar a San Pedro."))
+        }
+
+        val cleanComment = comment.trim().take(300)
+        if (cleanComment.isBlank()) {
+            return Result.failure(IllegalArgumentException("El comentario no puede estar vacío, mae."))
+        }
+
         return try {
             val blameId = java.util.UUID.randomUUID().toString()
             val payload = hashMapOf<String, Any>(
                 "id" to blameId,
                 "userUid" to user.uid,
                 "userName" to (user.displayName?.take(60) ?: "Mae de $canton"),
-                "canton" to canton.take(100),
-                "comment" to comment.take(300),
+                "canton" to canton.trim().take(100),
+                "comment" to cleanComment,
                 "createdAt" to FieldValue.serverTimestamp()
             )
             db.collection("community_blames").document(blameId).set(payload).await()
+            lastBlameTimestamp = now
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error postCommunityBlame", e)
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Realtime observer for dynamic seasonal insults stored in Firestore.
+     * Allows adding and toggling insults remotely from the Firebase Console without releasing app updates.
+     */
+    fun observeSeasonalInsults(): Flow<List<SeasonalInsult>> = callbackFlow {
+        val registration = db.collection("seasonal_insults")
+            .whereEqualTo("isActive", true)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.w(TAG, "Error observando seasonal_insults: ${error.message}")
+                    return@addSnapshotListener
+                }
+                val insults = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        val text = doc.getString("text") ?: ""
+                        if (text.isBlank()) return@mapNotNull null
+                        SeasonalInsult(
+                            id = doc.getString("id") ?: doc.id,
+                            text = text,
+                            season = doc.getString("season") ?: "general",
+                            category = doc.getString("category") ?: "ALL",
+                            isFamilyFriendly = doc.getBoolean("isFamilyFriendly") ?: true,
+                            isActive = doc.getBoolean("isActive") ?: true,
+                            priority = (doc.getLong("priority") ?: 1L).toInt()
+                        )
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error parseando seasonal insult ${doc.id}", e)
+                        null
+                    }
+                } ?: emptyList()
+                trySend(insults)
+            }
+        awaitClose { registration.remove() }
+    }
+
+    suspend fun fetchSeasonalInsults(): List<SeasonalInsult> {
+        return try {
+            val snapshot = db.collection("seasonal_insults")
+                .whereEqualTo("isActive", true)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { doc ->
+                val text = doc.getString("text") ?: ""
+                if (text.isBlank()) return@mapNotNull null
+                SeasonalInsult(
+                    id = doc.getString("id") ?: doc.id,
+                    text = text,
+                    season = doc.getString("season") ?: "general",
+                    category = doc.getString("category") ?: "ALL",
+                    isFamilyFriendly = doc.getBoolean("isFamilyFriendly") ?: true,
+                    isActive = doc.getBoolean("isActive") ?: true,
+                    priority = (doc.getLong("priority") ?: 1L).toInt()
+                )
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error fetching seasonal insults: ${e.message}")
+            emptyList()
         }
     }
 

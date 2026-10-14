@@ -55,5 +55,13 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if isAuthenticated() && resource.data.userUid == request.auth.uid;
     }
+
+    // Insultos y frases de temporada:
+    // Lectura pública para que cualquier usuario (incluso sin iniciar sesión) reciba los dichos actualizados.
+    // Escritura 100% bloqueada desde clientes: solo administradores desde la consola de Firebase pueden crear/modificar insultos.
+    match /seasonal_insults/{insultId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }
