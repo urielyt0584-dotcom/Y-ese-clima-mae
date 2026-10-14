@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with syncable preferences, favorite cantons, and San Pedro blame count",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Authentication UID of the user"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "favoriteCantons": {
+          "type": "array",
+          "description": "List of favorite cantons or locations saved by the user"
+        },
+        "sanPedroBlamesCount": {
+          "type": "integer",
+          "description": "Total times the user has blamed San Pedro for the weather"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["userId", "displayName", "sanPedroBlamesCount", "createdAt", "updatedAt"]
+    },
+    "CommunityBlame": {
+      "title": "CommunityBlame",
+      "description": "Public community blame entry for San Pedro's erratic weather behavior in Costa Rica",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document ID"
+        },
+        "userUid": {
+          "type": "string",
+          "description": "User UID who posted the blame"
+        },
+        "userName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "canton": {
+          "type": "string",
+          "description": "Canton or location where it is raining/hot"
+        },
+        "comment": {
+          "type": "string",
+          "description": "Sarcastic comment or complaint about the weather"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the blame was posted"
+        }
+      },
+      "required": ["id", "userUid", "userName", "canton", "comment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Private user profile and settings"
+    },
+    "/community_blames/{blameId}": {
+      "schema": {
+        "$ref": "#/entities/CommunityBlame"
+      },
+      "description": "Public community complaints against San Pedro"
+    }
+  }
+}

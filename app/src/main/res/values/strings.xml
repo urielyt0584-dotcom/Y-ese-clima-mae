@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">¿Y Ese Clima, Mae?</string>
+    <string name="app_tagline">El clima tico sin rodeos y con sarcasmo</string>
+    <string name="weather_feels_like">Sensación térmica</string>
+    <string name="weather_humidity">Humedad</string>
+    <string name="weather_wind">Viento</string>
+    <string name="weather_uv">Índice UV</string>
+    <string name="weather_rain_chance">Prob. de lluvia</string>
+    <string name="weather_sunrise">Amanecer</string>
+    <string name="weather_sunset">Atardecer</string>
+    <string name="hourly_forecast_title">Pronóstico por hora</string>
+    <string name="daily_forecast_title">Pronóstico de 7 días</string>
+    <string name="refresh_comment_action">Otro comentario del mae</string>
+    <string name="search_city_hint">Buscar ciudad o cantón…</string>
+    <string name="use_my_location">Usar mi ubicación actual</string>
+    <string name="notifications_title">Alertas del Mae</string>
+    <string name="notifications_subtitle">Notificaciones sarcásticas según el clima</string>
+    <string name="notifications_test_button">Simular alerta del Mae</string>
+    <string name="notification_channel_name">Alertas Sarcásticas del Mae</string>
+    <string name="notification_channel_desc">Avisos del clima con sabor y sarcasmo tico</string>
+    <string name="location_permission_needed">Mae, ocupamos permiso de ubicación para saber si le va a llover encima.</string>
+    <string name="grant_permission">Dar permiso, diay</string>
+    <string name="error_network">No se pudo cargar el clima, mae. Revise el internet porque la app no es adivina.</string>
+    <string name="error_server">El servidor no quiere bretear. Intente de nuevo.</string>
+    <string name="error_location_not_found">No encontramos esa ubicación. Mae, ¿seguro que existe?</string>
+    <string name="retry_action">Reintentar</string>
+    <string name="share_comment">Compartir qué dice el mae</string>
+</resources>

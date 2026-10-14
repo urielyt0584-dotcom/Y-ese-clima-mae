@@ -1,0 +1,6 @@
+{
+  "name": "¿Y Ese Clima, Mae?",
+  "description": "Aplicación del clima costarricense con asistente sarcástico que reacciona con humor tico, dichos populares y comentarios exagerados.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
